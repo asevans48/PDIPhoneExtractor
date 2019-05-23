@@ -18,16 +18,17 @@
  */
 package com.si;
 
-import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
+import org.pentaho.di.core.Const;
+import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
+import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.row.value.ValueMetaFactory;
+import org.pentaho.di.core.row.value.ValueMetaBigNumber;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
@@ -35,15 +36,10 @@ import org.pentaho.di.repository.ObjectId;
 import org.pentaho.di.repository.Repository;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
-import org.pentaho.di.trans.step.BaseStepMeta;
-import org.pentaho.di.trans.step.StepInterface;
-import org.pentaho.di.trans.step.StepMeta;
-import org.pentaho.di.trans.step.StepMetaInterface;
-import org.pentaho.di.trans.step.StepDataInterface;
+import org.pentaho.di.trans.step.*;
 import org.pentaho.metastore.api.IMetaStore;
 import org.w3c.dom.Node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -53,14 +49,79 @@ import java.util.List;
 @Step( id = "LibPhonenumberPDIPlugin", image = "LibPhonenumberPDIPlugin.svg", name = "ETL Phone Numbers",
     description = "Extract and standardize phone numbers.", categoryDescription = "Transform" )
 public class LibPhonenumberPDIPluginMeta extends BaseStepMeta implements StepMetaInterface {
-  
+  private String region;
+  private String inField;
+  private String outField;
+  private String countryCodeField;
+  private boolean checkValid;
+  private boolean findMatches;
+
   private static Class<?> PKG = LibPhonenumberPDIPlugin.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
 
   public LibPhonenumberPDIPluginMeta() {
-    super(); // allocate BaseStepMeta
+    super();
   }
 
-  public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
+  public String getCountryCodeField() {
+    return countryCodeField;
+  }
+
+  public void setCountryCodeField(String countryCodeField) {
+    this.countryCodeField = countryCodeField;
+  }
+
+  public String getRegion() {
+    return region;
+  }
+
+  public void setRegion(String region) {
+    this.region = region;
+  }
+
+  public String getInField() {
+    return inField;
+  }
+
+  public void setInField(String inField) {
+    this.inField = inField;
+  }
+
+  public String getOutField() {
+    return outField;
+  }
+
+  public void setOutField(String outField) {
+    this.outField = outField;
+  }
+
+  public boolean isCheckValid() {
+    return checkValid;
+  }
+
+  public void setCheckValid(boolean checkValid) {
+    this.checkValid = checkValid;
+  }
+
+  public boolean isFindMatches() {
+    return findMatches;
+  }
+
+  public void setFindMatches(boolean findMatches) {
+    this.findMatches = findMatches;
+  }
+
+  public String getXML() throws KettleValueException {
+    StringBuilder xml = new StringBuilder();
+    xml.append( XMLHandler.addTagValue( "inField", inField ) );
+    xml.append(XMLHandler.addTagValue("outField", outField));
+    xml.append(XMLHandler.addTagValue("countryCodeField", countryCodeField));
+    xml.append(XMLHandler.addTagValue("checkValid", checkValid));
+    xml.append(XMLHandler.addTagValue("findMatches", findMatches));
+    xml.append(XMLHandler.addTagValue("region", region));
+    return xml.toString();
+  }
+
+  public void loadXML(Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
     readData( stepnode );
   }
 
@@ -69,23 +130,66 @@ public class LibPhonenumberPDIPluginMeta extends BaseStepMeta implements StepMet
     return retval;
   }
   
-  private void readData( Node stepnode ) {
-    // Parse the XML (starting with the given stepnode) to extract the step metadata (into member variables, for example)
+  private void readData( Node stepnode ) throws KettleXMLException {
+    try {
+      setInField(Const.NVL(XMLHandler.getNodeValue(XMLHandler.getSubNode(stepnode, "inField")), ""));
+      setOutField(Const.NVL(XMLHandler.getNodeValue(XMLHandler.getSubNode(stepnode, "outField")), ""));
+      setCountryCodeField(Const.NVL(XMLHandler.getNodeValue(XMLHandler.getSubNode(stepnode, "countryCodeField")), ""));
+      setRegion(Const.NVL(XMLHandler.getNodeValue(XMLHandler.getSubNode(stepnode, "region")), ""));
+      setCheckValid(Const.NVL(XMLHandler.getNodeValue(XMLHandler.getSubNode(stepnode, "checkValid")), "N").equals("Y"));
+      setFindMatches(Const.NVL(XMLHandler.getNodeValue(XMLHandler.getSubNode(stepnode, "findMatches")), "N").equals("Y"));
+    } catch ( Exception e ) {
+      throw new KettleXMLException( "Demo plugin unable to read step info from XML node", e );
+    }
   }
 
   public void setDefault() {
+    inField = "";
+    outField = "";
+    countryCodeField = "";
+    region = "";
+    checkValid = false;
+    findMatches = false;
   }
 
   public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
+    try {
+      inField  = rep.getStepAttributeString(id_step, "inField" );
+      outField = rep.getStepAttributeString(id_step, "outField");
+      countryCodeField = rep.getStepAttributeString(id_step, "countryCodeField");
+      checkValid = rep.getStepAttributeBoolean(id_step, "checkValid");
+      findMatches = rep.getStepAttributeBoolean(id_step, "findMatches");
+      region = rep.getStepAttributeString(id_step, "region");
+    } catch ( Exception e ) {
+      throw new KettleException( "Unable to load step from repository", e );
+    }
   }
   
   public void saveRep( Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step )
     throws KettleException {
+    try {
+      rep.saveStepAttribute( id_transformation, id_step, "inField", inField);
+      rep.saveStepAttribute( id_transformation, id_step, "outField", outField);
+      rep.saveStepAttribute( id_transformation, id_step, "countryCodeField", countryCodeField);
+      rep.saveStepAttribute( id_transformation, id_step, "checkValid", checkValid);
+      rep.saveStepAttribute( id_transformation, id_step, "findMatches", findMatches);
+      rep.saveStepAttribute( id_transformation, id_step, "region", region);
+    } catch ( Exception e ) {
+      throw new KettleException( "Unable to save step into repository: " + id_step, e );
+    }
   }
   
   public void getFields( RowMetaInterface rowMeta, String origin, RowMetaInterface[] info, StepMeta nextStep, 
     VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
-    // Default: nothing changes to rowMeta
+    ValueMetaBigNumber v0 = new ValueMetaBigNumber(outField);
+    v0.setOrigin(origin);
+    rowMeta.addValueMeta(v0);
+
+    if(this.getCountryCodeField() != null && this.getCountryCodeField().trim().length() > 0){
+      ValueMetaBigNumber v1 = new ValueMetaBigNumber(outField);
+      v1.setOrigin(origin);
+      rowMeta.addValueMeta(v1);
+    }
   }
   
   public void check( List<CheckResultInterface> remarks, TransMeta transMeta, 

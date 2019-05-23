@@ -96,7 +96,6 @@
       <artifactId>libphonenumber</artifactId>
       <version>8.10.12</version>
     </dependency>
-
   </dependencies>
 
   <build>
