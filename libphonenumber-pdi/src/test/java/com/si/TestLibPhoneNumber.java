@@ -48,4 +48,11 @@ class TestLibPhoneNumber{
         PhoneNumber numberProto = PhoneNumberUtil.getInstance().parse("303-123-4561", "US");
         assert(!PhoneNumberUtil.getInstance().isValidNumber(numberProto));
     }
+
+    @Test
+    public void shouldReturnUSCountryCode() throws NumberParseException{
+        PhoneNumber numberProto = PhoneNumberUtil.getInstance().parse("303-411-4561", "US");
+        assert(PhoneNumberUtil.getInstance().isValidNumber(numberProto));
+        assert(numberProto.getCountryCode() == 1);
+    }
 }

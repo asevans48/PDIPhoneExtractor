@@ -28,7 +28,8 @@ import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.value.ValueMetaBigNumber;
+import org.pentaho.di.core.row.value.ValueMetaInteger;
+import org.pentaho.di.core.row.value.ValueMetaNumber;
 import org.pentaho.di.core.variables.VariableSpace;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
@@ -181,12 +182,12 @@ public class LibPhonenumberPDIPluginMeta extends BaseStepMeta implements StepMet
   
   public void getFields( RowMetaInterface rowMeta, String origin, RowMetaInterface[] info, StepMeta nextStep, 
     VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
-    ValueMetaBigNumber v0 = new ValueMetaBigNumber(outField);
+    ValueMetaInteger v0 = new ValueMetaInteger(outField);
     v0.setOrigin(origin);
     rowMeta.addValueMeta(v0);
 
     if(this.getCountryCodeField() != null && this.getCountryCodeField().trim().length() > 0){
-      ValueMetaBigNumber v1 = new ValueMetaBigNumber(outField);
+      ValueMetaInteger v1 = new ValueMetaInteger(countryCodeField);
       v1.setOrigin(origin);
       rowMeta.addValueMeta(v1);
     }

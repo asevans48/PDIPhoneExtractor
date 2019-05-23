@@ -72,7 +72,7 @@ public class LibPhonenumberPDIPlugin extends BaseStep implements StepInterface {
    */
   private List<Phonenumber.PhoneNumber> filterValid(List<Phonenumber.PhoneNumber> protoNumbers) {
     ArrayList<Phonenumber.PhoneNumber> validNumbers = new ArrayList<Phonenumber.PhoneNumber>();
-    for(Phonenumber.PhoneNumber number : validNumbers){
+    for(Phonenumber.PhoneNumber number : protoNumbers){
       if(PhoneNumberUtil.getInstance().isValidNumber(number)){
         validNumbers.add(number);
       }
@@ -115,10 +115,10 @@ public class LibPhonenumberPDIPlugin extends BaseStep implements StepInterface {
         Object[] numRow = rClone.clone();
         Long phn = number.getNationalNumber();
         numRow[idx] = phn;
-        if(meta.getCountryCodeField() != null && meta.getCountryCodeField().trim().length() == 2){
-          int ccode = number.getCountryCode();
+        if(meta.getCountryCodeField() != null && meta.getCountryCodeField().trim().length() > 0){
+          Integer ccode = number.getCountryCode();
           int ccIdx = data.outputRowMeta.indexOfValue(meta.getCountryCodeField());
-          numRow[ccIdx] = ccode;
+          numRow[ccIdx] = ccode.longValue();
         }
         orows.add(numRow);
       }
@@ -139,7 +139,7 @@ public class LibPhonenumberPDIPlugin extends BaseStep implements StepInterface {
    */
   private ArrayList<Object[]> getPhoneNumberRows(RowMetaInterface rmi, Object[] r){
     ArrayList<Object[]> orows = new ArrayList<Object[]>();
-    int idx = rmi.indexOfValue(meta.getOutField());
+    int idx = rmi.indexOfValue(meta.getInField());
     if(idx >= 0){
       if(meta.getRegion() != null && meta.getRegion().length() == 2){
         String text = (String) r[idx];
@@ -231,7 +231,7 @@ public class LibPhonenumberPDIPlugin extends BaseStep implements StepInterface {
     RowMetaInterface inMeta = getInputRowMeta().clone();
     data.outputRowMeta = inMeta;
     meta.getFields(data.outputRowMeta, getStepname(), null, null, this, null, null);
-    data.outputRowMeta = processRowMeta(data.outputRowMeta);
+    //data.outputRowMeta = processRowMeta(data.outputRowMeta);
     first = false;
   }
 
